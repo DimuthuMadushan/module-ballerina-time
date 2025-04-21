@@ -33,6 +33,7 @@ import java.math.BigDecimal;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -194,6 +195,26 @@ public class ExternMethods {
             }
             return StringUtils.fromString(dateTime.format(DateTimeFormatter.ofPattern(
                     Constants.EMAIL_DATE_TIME_FORMAT)));
+        } catch (DateTimeException e) {
+            return Utils.createError(Errors.FormatError, e.getMessage());
+        }
+    }
+
+    public static Object externCivilAddDuration(long year, long month, long day, long hour, long minute,
+                                                BDecimal second, long zoneHour, long zoneMinute,
+                                                BDecimal zoneSecond, BString zoneAbbrev,
+                                                BString zoneHandling, long duYears, long duMonths,
+                                                long duDays, long duHours, long duMinutes,
+                                                BDecimal duSeconds) {
+        try {
+            ZonedDateTime zonedDateTime = TimeValueHandler.createZoneDateTimeFromCivilValues(year, month, day, hour,
+                    minute, second, zoneHour, zoneMinute, zoneSecond, zoneAbbrev, zoneHandling.getValue());
+            CustomDuration duration = new CustomDuration(duYears, duMonths, duDays, duHours, duMinutes, duSeconds);
+            Period period = Period.of(duration.years, duration.months, duration.days);
+            zonedDateTime = zonedDateTime.plus(period);
+            zonedDateTime = zonedDateTime.plus(Utils.createTimeDuration(duration.hours, duration.minutes,
+                    duration.seconds, duration.nanoSeconds));
+            return TimeValueHandler.createCivilFromZoneDateTime(zonedDateTime);
         } catch (DateTimeException e) {
             return Utils.createError(Errors.FormatError, e.getMessage());
         }
